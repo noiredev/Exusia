@@ -32,6 +32,13 @@ LRESULT MainWindowCallBack(
             int Y = Paint.rcPaint.top;
             LONG Width = Paint.rcPaint.right - Paint.rcPaint.left;
             LONG Height = Paint.rcPaint.bottom - Paint.rcPaint.top;
+            static DWORD Operation = WHITENESS;
+            PatBlt(DeviceContext, X, Y, Width, Height, Operation);
+            if(Operation == WHITENESS) {
+                Operation = BLACKNESS;
+            } else {
+                Operation = WHITENESS;
+            }
             EndPaint(Window, &Paint);
         } break;
 
