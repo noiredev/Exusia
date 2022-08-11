@@ -1,5 +1,11 @@
 #include <windows.h>
 
+#define internal static
+#define local_persist static
+#define global_variable static
+
+global_variable bool Running;
+
 LRESULT MainWindowCallBack(
   HWND Window,
   UINT Message,
@@ -14,11 +20,11 @@ LRESULT MainWindowCallBack(
         } break;
 
         case WM_DESTROY: {
-            OutputDebugStringA("WM_DESTROY\n");
+            Running = false;
         } break;
 
         case WM_CLOSE: {
-            OutputDebugStringA("WM_CLOSE\n");
+            Running = false;
         } break;
 
         case WM_ACTIVATEAPP: {
@@ -32,7 +38,7 @@ LRESULT MainWindowCallBack(
             int Y = Paint.rcPaint.top;
             LONG Width = Paint.rcPaint.right - Paint.rcPaint.left;
             LONG Height = Paint.rcPaint.bottom - Paint.rcPaint.top;
-            PatBlt(DeviceContext, X, Y, Width, Height, Operation);
+            PatBlt(DeviceContext, X, Y, Width, Height, WHITENESS);
             EndPaint(Window, &Paint);
         } break;
 
@@ -75,15 +81,16 @@ INT WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
                 Instance,
                 0);
         if(WindowHandle) {
-            MSG Message;
-            for(;;) {
-            BOOL MessageResult = GetMessage(&Message, 0, 0, 0);
-            if(MessageResult > 0) {
-                TranslateMessage(&Message);
-                DispatchMessage(&Message);
-            } else {
-                break;
-            }
+            Running = true;
+            while(Running) {
+                MSG Message;
+                BOOL MessageResult = GetMessage(&Message, 0, 0, 0);
+                if(MessageResult > 0) {
+                    TranslateMessage(&Message);
+                    DispatchMessage(&Message);
+                } else {
+                    break;
+                }
             }
         } else {
             // log if this fails
