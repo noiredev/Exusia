@@ -6,12 +6,33 @@
 #define Assert(Expression)
 #endif
 
-#define Kilobytes(Value) ((Value)*1024)
-#define Megabytes(Value) (Kilobytes(Value)*1024)
-#define Gigabytes(Value) (Megabytes(Value)*1024)
-#define Terrabytes(Value) (Gigabytes(Value)*1024)
+#define Kilobytes(Value) ((Value)*1024LL)
+#define Megabytes(Value) (Kilobytes(Value)*1024LL)
+#define Gigabytes(Value) (Megabytes(Value)*1024LL)
+#define Terrabytes(Value) (Gigabytes(Value)*1024LL)
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+
+inline uint32_t SafeTruncateUInt64(uint64_t Value) {
+    // TODO: Defines for maximum values
+    Assert(Value <= 0xFFFFFFFF);
+    uint32_t Result = (uint32_t)Value;
+    return Result;
+}
+
+#if FIRSTGAME_INTERNAL
+/* IMPORTANT:
+    These are not for doing anything in the shipped version
+    They are for blocking and the write doesn't protect against lost data.
+*/
+struct debug_read_file_result {
+    uint32_t ContentsSize;
+    void *Contents;
+};
+internal debug_read_file_result DEBUGPlatformReadEntireFile(char *Filename);
+internal void DEBUGPlatformFreeFileMemory(void *Memory);
+internal bool32 DEBUGPlatformWriteEntireFile(char *Filename, uint32_t MemorySize, void *Memory);
+#endif
 
 struct game_offscreen_buffer {
     // Pixels are always 32-bits wide, Little Endian 0x xx RR GG BB, Memory Order: BB GG RR xx
@@ -33,38 +54,45 @@ struct game_button_state {
 };
 
 struct game_controller_input {
+    bool32 IsConnected;
     bool32 IsAnalog;
-
-    float StartX;
-    float StartY;
-
-    float MinX;
-    float MinY;
-
-    float MaxX;
-    float MaxY;
-
-    float EndX;
-    float EndY;
+    float StickAverageX;
+    float StickAverageY;
 
     union {
-        game_button_state Buttons[6];
+        game_button_state Buttons[12];
         struct {
-            game_button_state Up;
-            game_button_state Down;
-            game_button_state Left;
-            game_button_state Right;
+            game_button_state MoveUp;
+            game_button_state MoveDown;
+            game_button_state MoveLeft;
+            game_button_state MoveRight;
+
+            game_button_state ActionUp;
+            game_button_state ActionDown;
+            game_button_state ActionLeft;
+            game_button_state ActionRight;
+
             game_button_state LeftShoulder;
             game_button_state RightShoulder;
+
+            game_button_state Start;
+            game_button_state Back;
+
+            // fake button
+            game_button_state Terminator;
         };
     };
 };
 
 struct game_input {
     // TODO: Insert clock value
-    game_controller_input Controllers[4];
+    game_controller_input Controllers[5];
 };
-
+inline game_controller_input *GetController(game_input *Input, int ControllerIndex) {
+    Assert(ControllerIndex < ArrayCount(Input->Controllers));
+    game_controller_input *Result = &Input->Controllers[ControllerIndex];
+    return Result;
+}
 struct game_memory {
     bool32 IsInitialized;
     uint64_t PermanentStorageSize;
