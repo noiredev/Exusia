@@ -7,6 +7,7 @@ struct win32_offscreen_buffer {
     int Width;
     int Height;
     int Pitch;
+    int BytesPerPixel;
 };
 
 struct win32_window_dimension {
@@ -19,8 +20,20 @@ struct win32_sound_output {
     uint32_t RunningSampleIndex;
     int BytesPerSample;
     int SecondaryBufferSize;
+    DWORD SafetyBytes;
     float tSine;
     int LatencySampleCount;
+};
+
+struct win32_debug_time_marker {
+    DWORD OutputPlayCursor;
+    DWORD OutputWriteCursor;
+    DWORD OutputLocation;
+    DWORD OutputByteCount;
+    DWORD ExpectedFlipPlayCursor;
+
+    DWORD FlipPlayCursor;
+    DWORD FlipWriteCursor;
 };
 
 #define WIN32_FIRSTGAME_H
