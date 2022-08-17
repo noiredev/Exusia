@@ -1,20 +1,11 @@
-#include <stdint.h>
-#include <stdio.h>
-
-#define internal static
-#define local_persist static
-#define global_variable static
-
-#define Pi32 3.14159265359f
-
-typedef int32_t bool32;
+#include "firstgame.h"
 
 #include <windows.h>
+#include <stdio.h>
+#include <malloc.h>
 #include <xinput.h>
 #include <dsound.h>
-#include <math.h>
 
-#include "firstgame.cpp"
 #include "win32_firstgame.h"
 
 // Some temporary global variables
