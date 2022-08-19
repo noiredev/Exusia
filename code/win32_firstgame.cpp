@@ -95,22 +95,30 @@ DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile) {
     return Result;
 }
 
-struct win32_game_code {
-    HMODULE GameCodeDLL;
-    game_update_and_render *UpdateAndRender;
-    game_get_sound_samples *GetSoundSamples;
+inline FILETIME Win32GetLastWriteTime(char *Filename) {
+    FILETIME LastWriteTime = {};
 
-    bool32 IsValid;
-};
+    WIN32_FIND_DATA FindData;
+    HANDLE FindHandle = FindFirstFileA(Filename, &FindData);
+    if(FindHandle != INVALID_HANDLE_VALUE) {
+        LastWriteTime = FindData.ftLastWriteTime;
+        FindClose(FindHandle);
+    }
 
-internal win32_game_code Win32LoadGameCode(void) {
+    return LastWriteTime;
+}
+
+internal win32_game_code Win32LoadGameCode(char *SourceDLLName, char *TempDLLName) {
     win32_game_code Result = {};
 
     // TODO: Proper pathing
     // TODO: Automatic determination of when updates are necessary.
 
-    CopyFile("firstgame.dll", "firstgame_temp.dll", FALSE);
-    Result.GameCodeDLL = LoadLibraryA("firstgame_temp.dll");
+
+    Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
+
+    CopyFile(SourceDLLName, TempDLLName, FALSE);
+    Result.GameCodeDLL = LoadLibraryA(TempDLLName);
     if(Result.GameCodeDLL) {
         Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
         Result.GetSoundSamples = (game_get_sound_samples *)GetProcAddress(Result.GameCodeDLL, "GameGetSoundSamples");
@@ -505,12 +513,12 @@ internal void Win32DebugSyncDisplay(win32_offscreen_buffer *Backbuffer,
     for(int MarkerIndex = 0; MarkerIndex < MarkerCount; ++MarkerIndex) {
         // TODO: Bug fix this and make audio output better in the future
         win32_debug_time_marker *ThisMarker = &Markers[MarkerIndex];
-        // Assert(ThisMarker->OutputPlayCursor < SoundOutput->SecondaryBufferSize);
-        // Assert(ThisMarker->OutputWriteCursor < SoundOutput->SecondaryBufferSize);
-        // Assert(ThisMarker->OutputLocation < SoundOutput->SecondaryBufferSize);
-        // Assert(ThisMarker->OutputByteCount < SoundOutput->SecondaryBufferSize);
-        // Assert(ThisMarker->FlipPlayCursor < SoundOutput->SecondaryBufferSize);
-        // Assert(ThisMarker->FlipWriteCursor < SoundOutput->SecondaryBufferSize);
+        Assert(ThisMarker->OutputPlayCursor < (DWORD)SoundOutput->SecondaryBufferSize);
+        Assert(ThisMarker->OutputWriteCursor < (DWORD)SoundOutput->SecondaryBufferSize);
+        Assert(ThisMarker->OutputLocation < (DWORD)SoundOutput->SecondaryBufferSize);
+        Assert(ThisMarker->OutputByteCount < (DWORD)SoundOutput->SecondaryBufferSize);
+        Assert(ThisMarker->FlipPlayCursor < (DWORD)SoundOutput->SecondaryBufferSize);
+        Assert(ThisMarker->FlipWriteCursor < (DWORD)SoundOutput->SecondaryBufferSize);
 
         DWORD PlayColor = 0xFFFFFFFF;
         DWORD WriteColor = 0xFFFF0000;
@@ -545,9 +553,36 @@ internal void Win32DebugSyncDisplay(win32_offscreen_buffer *Backbuffer,
     }
 }
 
-int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLine, INT ShowCode) {
-    win32_game_code Game = Win32LoadGameCode();
+void CatStrings(size_t SourceACount, char *SourceA, size_t SourceBCount, char *SourceB, size_t DestCount, char *Dest) {
+    for(int Index = 0; Index < SourceACount; ++Index) {
+        *Dest++ = *SourceA++;
+    }
+    for(int Index = 0; Index < SourceACount; ++Index) {
+        *Dest++ = *SourceB++;
+    }
 
+    *Dest++ = 0;
+}
+
+int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLine, INT ShowCode) {
+    // Never use MAX_PATH in code that is user-facing because it can be dangerous.
+    char EXEFileName[MAX_PATH];
+    DWORD SizeOfFileName = GetModuleFileName(0, EXEFileName, sizeof(EXEFileName));
+    char *OnePastLastSlash = EXEFileName;
+    for(char *Scan = EXEFileName; *Scan; ++Scan) {
+        if(*Scan == '\\') {
+            OnePastLastSlash = Scan + 1;
+        }
+    }
+    
+    char SourceGameCodeDLLFilename[] = "firstgame.dll";
+    char SourceGameCodeDLLFullPath[MAX_PATH];
+    CatStrings(OnePastLastSlash - EXEFileName, EXEFileName, sizeof(SourceGameCodeDLLFilename) - 1, SourceGameCodeDLLFilename, sizeof(SourceGameCodeDLLFullPath), SourceGameCodeDLLFullPath);
+
+    char TempGameCodeDLLFilename[] = "firstgame_temp.dll";
+    char TempGameCodeDLLFullPath[MAX_PATH];
+    CatStrings(OnePastLastSlash - EXEFileName, EXEFileName, sizeof(TempGameCodeDLLFilename) - 1, TempGameCodeDLLFilename, sizeof(TempGameCodeDLLFullPath), TempGameCodeDLLFullPath);
+    
     LARGE_INTEGER PerfCountFrequencyResult;
     QueryPerformanceFrequency(&PerfCountFrequencyResult);
     GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
@@ -645,8 +680,16 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
                 float AudioLatencySeconds = 0;
                 bool32 SoundIsValid = false;
 
+                win32_game_code Game = Win32LoadGameCode(SourceGameCodeDLLFilename, TempGameCodeDLLFilename);
+
                 uint64_t LastCycleCount = __rdtsc();
                 while(GlobalRunning) {
+                    FILETIME NewDLLWriteTime = Win32GetLastWriteTime(SourceGameCodeDLLFilename);
+                    if(CompareFileTime(&NewDLLWriteTime, &Game.DLLLastWriteTime) != 0) {
+                        Win32UnloadGameCode(&Game);
+                        Game = Win32LoadGameCode(SourceGameCodeDLLFilename, TempGameCodeDLLFilename);
+                    }
+
                     game_controller_input *KeyboardController = &NewInput->Controllers[0];
                     // TODO: Zeroing macro
                     game_controller_input *OldKeyboardController = GetController(OldInput, 0);
@@ -846,8 +889,6 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
 
 #if FIRSTGAME_INTERNAL
                     {
-                        // DWORD PlayCursor;
-                        // DWORD WriteCursor;
                         if(SecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor) == DS_OK) {
                             win32_debug_time_marker *Marker = &DebugTimeMarkers[DebugTimeMarkerIndex];
 
