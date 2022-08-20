@@ -7,8 +7,12 @@ internal void GameOutputSound(game_state *GameState, game_sound_output_buffer *S
 
     int16_t *SampleOut = SoundBuffer->Samples;
     for(int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; ++SampleIndex) {
+#if 0
         float SineValue = sinf(GameState->tSine);
         int16_t SampleValue = (int16_t)(SineValue * ToneVolume);
+#else
+        int16_t SampleValue = 0;
+#endif
         *SampleOut++ = SampleValue;
         *SampleOut++ = SampleValue;
 
@@ -50,6 +54,23 @@ internal void RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset,
     }
 }
 
+internal void RenderPlayer(game_offscreen_buffer *Buffer, int PlayerX, int PlayerY) {
+    uint8_t *EndOfBuffer = (uint8_t *)Buffer->Memory + Buffer->Pitch*Buffer->Height;
+    uint32_t Color = 0xFFFFFFFF;
+    int Top = PlayerY;
+    int Bottom = PlayerY + 10;
+
+    for(int X = PlayerX; X < PlayerX+10; ++X) {
+        uint8_t *Pixel = (uint8_t *)Buffer->Memory + X*Buffer->BytesPerPixel + Top*Buffer->Pitch;
+        for(int Y = Top; Y < Bottom; ++Y) {
+            if(Pixel >= Buffer->Memory && Pixel < EndOfBuffer) {
+                *(uint32_t *)Pixel = Color;
+                Pixel += Buffer->Pitch;
+            }
+        }
+    }
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
@@ -66,6 +87,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
         GameState->ToneHz = 256;
         GameState->tSine = 0.0f;
+
+        GameState->PlayerX = 100;
+        GameState->PlayerY = 100;
     
         Memory->IsInitialized = true;
     }
@@ -87,11 +111,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             }
         }
 
+        GameState->PlayerX += (int)(1.0f*Controller->StickAverageX);
+        GameState->PlayerY -= (int)(1.0f*Controller->StickAverageY);
         if(Controller->ActionDown.EndedDown) {
-            GameState->GreenOffset += 1;
+            GameState->PlayerY -= 10;
         }
     }
+
     RenderWeirdGradient(Buffer, GameState->BlueOffset, GameState->GreenOffset);
+    RenderPlayer(Buffer, GameState->PlayerX, GameState->PlayerY);
 }
 
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples) {

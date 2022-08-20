@@ -62,6 +62,7 @@ struct game_offscreen_buffer {
     int Width;
     int Height;
     int Pitch;
+    int BytesPerPixel;
 };
 
 struct game_sound_output_buffer {
@@ -141,6 +142,9 @@ struct game_state {
     int GreenOffset;
     int BlueOffset;
     float tSine;
+
+    int PlayerX;
+    int PlayerY;
 };
 
 #define FIRSTGAME_H

@@ -45,5 +45,16 @@ struct win32_game_code {
     bool32 IsValid;
 };
 
+struct win32_state {
+    uint64_t TotalSize;
+    void *GameMemoryBlock;
+    
+    HANDLE RecordingHandle;
+    int InputRecordingIndex;
+    
+    HANDLE PlaybackHandle;
+    int InputPlayingIndex;
+};
+
 #define WIN32_FIRSTGAME_H
 #endif
