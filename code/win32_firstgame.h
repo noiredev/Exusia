@@ -22,7 +22,6 @@ struct win32_sound_output {
     int SecondaryBufferSize;
     DWORD SafetyBytes;
     float tSine;
-    int LatencySampleCount;
 };
 
 struct win32_debug_time_marker {
@@ -48,10 +47,16 @@ struct win32_game_code {
 };
 
 #define WIN32_STATE_FILE_NAME_COUNT MAX_PATH
+struct win32_replay_buffer {
+    char ReplayFilename[WIN32_STATE_FILE_NAME_COUNT];
+    void *MemoryBlock;
+};
+
 struct win32_state {
     uint64_t TotalSize;
     void *GameMemoryBlock;
-    
+    win32_replay_buffer ReplayBuffers[4];
+
     HANDLE RecordingHandle;
     int InputRecordingIndex;
     
