@@ -116,7 +116,8 @@ struct game_input {
     game_button_state MouseButtons[5];
     int32_t MouseX, MouseY, MouseZ;
 
-    // TODO: Insert clock value
+    float dtForFrame;
+
     game_controller_input Controllers[5];
 };
 inline game_controller_input *GetController(game_input *Input, int ControllerIndex) {
@@ -144,13 +145,8 @@ typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
 typedef GAME_GET_SOUND_SAMPLES(game_get_sound_samples);
 
 struct game_state {
-    int ToneHz;
-    int GreenOffset;
-    int BlueOffset;
-    float tSine;
-
-    int PlayerX;
-    int PlayerY;
+    float PlayerX;
+    float PlayerY;
 };
 
 #define FIRSTGAME_H

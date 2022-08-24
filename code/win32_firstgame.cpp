@@ -519,10 +519,9 @@ internal void Win32ProcessPendingMessage(win32_state *State, game_controller_inp
             case WM_KEYDOWN:
             case WM_KEYUP: {
                 uint32_t VKCode = (uint32_t)Message.wParam;
-                #define KeyMessageWasDownBit (1 << 30)
-                #define KeyMessageIsDownBit (1 << 31)
-                bool32 WasDown = ((Message.lParam & KeyMessageWasDownBit) != 0);
-                bool32 IsDown = ((Message.lParam & KeyMessageIsDownBit) == 0);
+
+                bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
+                bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
                 if(WasDown != IsDown) {
                     if(VKCode == 'W') {
                         Win32ProcessKeyboardEvent(&KeyboardController->MoveUp, IsDown);
@@ -699,7 +698,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
     WNDCLASSA WindowClass = {};
 
     // win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-    Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
+    Win32ResizeDIBSection(&GlobalBackBuffer, 960, 540);
 
     // Refer to MSDN to what the wndclass structure is to understand what these mean.
     WindowClass.style = CS_HREDRAW|CS_VREDRAW;
@@ -807,24 +806,23 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
 
                 uint64_t LastCycleCount = __rdtsc();
                 while(GlobalRunning) {
+                    NewInput->dtForFrame = TargetSecondsPerFrame;
+
                     FILETIME NewDLLWriteTime = Win32GetLastWriteTime(SourceGameCodeDLLFullPath);
                     if(CompareFileTime(&NewDLLWriteTime, &Game.DLLLastWriteTime) != 0) {
                         Win32UnloadGameCode(&Game);
                         Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath);
                     }
 
-                    game_controller_input *KeyboardController = &NewInput->Controllers[0];
-                    // TODO: Zeroing macro
                     game_controller_input *OldKeyboardController = GetController(OldInput, 0);
                     game_controller_input *NewKeyboardController = GetController(NewInput, 0);
-                    game_controller_input ZeroController = {};
-                    *NewKeyboardController = ZeroController;
+                    *NewKeyboardController = {};
                     NewKeyboardController->IsConnected = true;
                     for(int ButtonIndex = 0; ButtonIndex < ArrayCount(NewKeyboardController->Buttons); ++ButtonIndex) {
                         NewKeyboardController->Buttons[ButtonIndex].EndedDown = OldKeyboardController->Buttons[ButtonIndex].EndedDown;
                     }
 
-                    Win32ProcessPendingMessage(&Win32State, KeyboardController);
+                    Win32ProcessPendingMessage(&Win32State, NewKeyboardController);
 
                     if(!GlobalPause) {
                         POINT MouseP;
