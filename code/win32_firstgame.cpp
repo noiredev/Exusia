@@ -288,12 +288,20 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, i
 
 internal void Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer, HDC DeviceContext, int WindowWidth, int WindowHeight) {
     // For prototyping it is always going to blit 1 to 1 pixels to make sure there are no artifacts.
+    int OffsetX = 10;
+    int OffsetY = 10;
+
+    PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
+    PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
+    PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
+    PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
+
     StretchDIBits(DeviceContext, 
                     /*
                     X, Y, Width, Height,
                     X, Y, Width, Height,
                     */
-                    0, 0, Buffer->Width, Buffer->Height,
+                    OffsetX, OffsetY, Buffer->Width, Buffer->Height,
                     0, 0, Buffer->Width, Buffer->Height,
                     Buffer->Memory,
                     &Buffer->Info,
@@ -870,11 +878,11 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
                                     NewController->IsAnalog = false;
                                 }
                                 if(bool32 Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)) {
-                                    NewController->StickAverageY = -1.0f;
+                                    NewController->StickAverageX = -1.0f;
                                     NewController->IsAnalog = false;
                                 }
                                 if(bool32 Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) {
-                                    NewController->StickAverageY = 1.0f;
+                                    NewController->StickAverageX = 1.0f;
                                     NewController->IsAnalog = false;
                                 }
 
