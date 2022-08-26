@@ -1,5 +1,6 @@
 #if !defined(FIRSTGAME_H)
 #include "prototype_platform.h"
+#include "prototype_intrinsics.h"
 
 #define internal static
 #define local_persist static
@@ -29,22 +30,24 @@ inline game_controller_input *GetController(game_input *Input, int ControllerInd
 }
 
 struct canonical_position {
+#if 1
     int32_t TileMapX;
     int32_t TileMapY;
 
     int32_t TileX;
     int32_t TileY;
-    
+#else
     // Tile-relative x and y
     float TileRelX;
     float TileRelY;
+#endif
 };
 
 struct raw_position {
     int32_t TileMapX;
     int32_t TileMapY;
 
-    // Tilemap relative X and
+    // Tilemap relative X and Y
     float X;
     float Y;
 };
@@ -54,13 +57,14 @@ struct tile_map {
 };
 
 struct world {
+    float TileSideInMeters;
+    int32_t TileSideInPixels;
+
     int32_t CountX;
     int32_t CountY;
     
     float UpperLeftX;
     float UpperLeftY;
-    float TileWidth;
-    float TileHeight;
 
     int32_t TileMapCountX;
     int32_t TileMapCountY;
@@ -69,11 +73,12 @@ struct world {
 };
 
 struct game_state {
-    int32_t PlayerTileMapX;
-    int32_t PlayerTileMapY;
+    canonical_position PlayerP;
+    // int32_t PlayerTileMapX;
+    // int32_t PlayerTileMapY;
 
-    float PlayerX;
-    float PlayerY;
+    // float PlayerX;
+    // float PlayerY;
 };
 
 #define FIRSTGAME_H

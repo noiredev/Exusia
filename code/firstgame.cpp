@@ -23,27 +23,6 @@ internal void GameOutputSound(game_state *GameState, game_sound_output_buffer *S
     } 
 }
 
-inline int32_t RoundFloatToInt32(float Number) {
-    int32_t Result = (int32_t)(Number + 0.5f);
-    return Result;
-}
-
-inline uint32_t RoundFloatToUInt32(float Number) {
-    uint32_t Result = (uint32_t)(Number + 0.5f);
-    return Result;
-}
-
-#include "math.h"
-inline int32_t FloorFloatToInt32(float Number) {
-    int32_t Result = (int32_t)floorf(Number);
-    return(Result);
-}
-
-inline int32_t TruncateFloatToInt32(float Number) {
-    int32_t Result = (int32_t)Number;
-    return Result;
-}
-
 internal void DrawRectangle(game_offscreen_buffer *Buffer, float FloatMinX, float FloatMinY, float FloatMaxX, float FloatMaxY, float R, float G, float B) {
     int32_t MinX = RoundFloatToInt32(FloatMinX);
     int32_t MinY = RoundFloatToInt32(FloatMinY);
@@ -116,16 +95,16 @@ inline canonical_position GetCanonicalPosition(world *World, raw_position Pos) {
 
     float X = Pos.X - World->UpperLeftX;
     float Y = Pos.Y - World->UpperLeftY;
-    Result.TileX = FloorFloatToInt32(X / World->TileWidth);
-    Result.TileY = FloorFloatToInt32(Y / World->TileHeight);
+    Result.TileX = FloorFloatToInt32(X / World->TileSideInPixels);
+    Result.TileY = FloorFloatToInt32(Y / World->TileSideInPixels);
 
-    Result.TileRelX = X - Result.TileX*World->TileWidth;
-    Result.TileRelY = Y - Result.TileY*World->TileHeight;
+    Result.TileRelX = X - Result.TileX*World->TileSideInPixels;
+    Result.TileRelY = Y - Result.TileY*World->TileSideInPixels;
 
     Assert(Result.TileRelX >= 0);
     Assert(Result.TileRelY >= 0);
-    Assert(Result.TileRelX < World->TileWidth);
-    Assert(Result.TileRelY < World->TileHeight);
+    Assert(Result.TileRelX < World->TileSideInPixels);
+    Assert(Result.TileRelY < World->TileSideInPixels);
 
     if(Result.TileX < 0) {
         Result.TileX = World->CountX + Result.TileX;
@@ -231,20 +210,22 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     World.CountX = TILE_MAP_COUNT_X;
     World.CountY = TILE_MAP_COUNT_Y;
     
-    World.UpperLeftX = -30;
-    World.UpperLeftY = 0;
-    World.TileWidth = 60;
-    World.TileHeight = 60;
+    World.TileSideInMeters = 1.4f;
+    World.TileSideInPixels = 60;
 
-    float PlayerWidth = 0.75f*World.TileWidth;
-    float PlayerHeight = World.TileHeight;
+    World.UpperLeftX = -(float)World.TileSideInPixels/2;
+    World.UpperLeftY = 0;
+
+    float PlayerWidth = 0.75f*World.TileSideInPixels;
+    float PlayerHeight = (float)World.TileSideInPixels;
 
     World.TileMaps = (tile_map *)TileMaps;
     
     game_state *GameState = (game_state *)Memory->PermanentStorage;
     if(!Memory->IsInitialized) {
-        GameState->PlayerX = 150;
-        GameState->PlayerY = 150;
+        GameState->PlayerP.TileMapX = 0;
+        GameState->PlayerP.TileMapY = 0;
+        GameState->PlayerP.TileY = 0;
 
         Memory->IsInitialized = true;
     }
@@ -292,8 +273,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
                 GameState->PlayerTileMapX = CanPos.TileMapX;
                 GameState->PlayerTileMapY = CanPos.TileMapY;
 
-                GameState->PlayerX = World.UpperLeftX + World.TileWidth*CanPos.TileX + CanPos.TileRelX;
-                GameState->PlayerY = World.UpperLeftY + World.TileHeight*CanPos.TileY + CanPos.TileRelY;
+                GameState->PlayerX = World.UpperLeftX + World.TileSideInPixels*CanPos.TileX + CanPos.TileRelX;
+                GameState->PlayerY = World.UpperLeftY + World.TileSideInPixels*CanPos.TileY + CanPos.TileRelY;
             }
         }
     }
@@ -308,16 +289,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
                 Gray = 1.0f;
             }
 
-            float MinX = World.UpperLeftX + ((float)Column)*World.TileWidth;
-            float MinY = World.UpperLeftY + ((float)Row)*World.TileHeight;
-            float MaxX = MinX + World.TileWidth;
-            float MaxY = MinY + World.TileHeight;
+            float MinX = World.UpperLeftX + ((float)Column)*World.TileSideInPixels;
+            float MinY = World.UpperLeftY + ((float)Row)*World.TileSideInPixels;
+            float MaxX = MinX + World.TileSideInPixels;
+            float MaxY = MinY + World.TileSideInPixels;
             DrawRectangle(Buffer, MinX, MinY, MaxX, MaxY, Gray, Gray, Gray);
         }
     }
 
     float PlayerR = 1.0f;
-    float PlayerG = 1.0f;
+    float PlayerG = 0.0f;
     float PlayerB = 0.0f;
     float PlayerLeft = GameState->PlayerX - 0.5f * PlayerWidth;
     float PlayerTop = GameState->PlayerY - PlayerHeight;

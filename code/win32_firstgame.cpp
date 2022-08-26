@@ -742,7 +742,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
             if(Win32RefreshRate > 1) {
                 MonitorRefreshHz = Win32RefreshRate;
             }
-            float GameUpdateHz =  (MonitorRefreshHz / 2.0f);
+            float GameUpdateHz = (MonitorRefreshHz / 2.0f);
             float TargetSecondsPerFrame = 1.0f / (float)GameUpdateHz;
 
             SoundOutput.SamplesPerSecond = 48000;
