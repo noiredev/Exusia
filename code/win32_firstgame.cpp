@@ -308,7 +308,7 @@ internal void Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer, HDC Dev
                     DIB_RGB_COLORS, SRCCOPY);
 }
 
-LRESULT Win32MainWindowCallBack(
+internal LRESULT Win32MainWindowCallBack(
   HWND Window,
   UINT Message,
   WPARAM WParam,
@@ -450,7 +450,7 @@ internal void Win32GetInputFileLocation(win32_state *State, bool32 InputStream, 
     Win32BuildEXEPathFileName(State, Temp, DestCount, Dest);
 }
 
-internal win32_replay_buffer *Win32GetReplayBuffer(win32_state *State, unsigned Index) {
+internal win32_replay_buffer *Win32GetReplayBuffer(win32_state *State, int unsigned Index) {
     Assert(Index < ArrayCount(State->ReplayBuffers));
     win32_replay_buffer *Result = &State->ReplayBuffers[Index];
     return Result;
@@ -579,14 +579,14 @@ internal void Win32ProcessPendingMessage(win32_state *State, game_controller_inp
                 }
 
                 bool32 AltKeyWasDown = Message.lParam & (1 << 29);
-                if(VKCode == VK_F4 && AltKeyWasDown) {
+                if((VKCode == VK_F4) && AltKeyWasDown) {
                     GlobalRunning = false;
                 }
             } break;
             
             default: {
-            TranslateMessage(&Message);
-            DispatchMessage(&Message);
+                TranslateMessage(&Message);
+                DispatchMessageA(&Message);
             } break;
         }
     }
@@ -720,7 +720,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
     if(RegisterClass(&WindowClass)) {
         HWND Window = 
             CreateWindowExA(
-                0, // WS_EX_TOPMOST,|WS_EX_LAYERED,
+                0, // WS_EX_TOPMOST|WS_EX_LAYERED,
                 WindowClass.lpszClassName,
                 "Test",
                 WS_OVERLAPPEDWINDOW|WS_VISIBLE,
@@ -778,7 +778,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
             GameMemory.PermanentStorage = Win32State.GameMemoryBlock;
             GameMemory.TransientStorage = ((uint8_t *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize);
 
-            for(int ReplayIndex = 0; ReplayIndex < ArrayCount(Win32State.ReplayBuffers); ++ReplayIndex) {
+            for(int ReplayIndex = 1; ReplayIndex < ArrayCount(Win32State.ReplayBuffers); ++ReplayIndex) {
                 win32_replay_buffer *ReplayBuffer = &Win32State.ReplayBuffers[ReplayIndex];
 
                 Win32GetInputFileLocation(&Win32State, false, ReplayIndex, sizeof(ReplayBuffer->Filename), ReplayBuffer->Filename);
@@ -862,7 +862,6 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
                                 // plugged in
                                 XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
 
-                                NewController->IsAnalog = true;
                                 NewController->StickAverageX = Win32ProcessXInputStickValue(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
                                 NewController->StickAverageY = Win32ProcessXInputStickValue(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
                                 if((NewController->StickAverageX != 0.0f) || (NewController->StickAverageY != 0.0f)) {
@@ -873,15 +872,15 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
                                     NewController->StickAverageY = 1.0f;
                                     NewController->IsAnalog = false;
                                 }
-                                if(bool32 Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)) {
+                                if(Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) {
                                     NewController->StickAverageY = -1.0f;
                                     NewController->IsAnalog = false;
                                 }
-                                if(bool32 Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)) {
+                                if(Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) {
                                     NewController->StickAverageX = -1.0f;
                                     NewController->IsAnalog = false;
                                 }
-                                if(bool32 Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) {
+                                if(Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) {
                                     NewController->StickAverageX = 1.0f;
                                     NewController->IsAnalog = false;
                                 }
@@ -1077,7 +1076,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
 
 #if FIRSTGAME_INTERNAL
                         ++DebugTimeMarkerIndex;
-                        if(DebugTimeMarkerIndex >= ArrayCount(DebugTimeMarkers)) {
+                        if(DebugTimeMarkerIndex == ArrayCount(DebugTimeMarkers)) {
                             DebugTimeMarkerIndex = 0;
                         }
 #endif

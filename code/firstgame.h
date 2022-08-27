@@ -38,18 +38,11 @@ struct canonical_position {
     int32_t TileY;
 #else
     // Tile-relative x and y
+    uint32_t _TileX;
+    uint32_t _TileY;
+#endif
     float TileRelX;
     float TileRelY;
-#endif
-};
-
-struct raw_position {
-    int32_t TileMapX;
-    int32_t TileMapY;
-
-    // Tilemap relative X and Y
-    float X;
-    float Y;
 };
 
 struct tile_map {
@@ -59,6 +52,7 @@ struct tile_map {
 struct world {
     float TileSideInMeters;
     int32_t TileSideInPixels;
+    float MetersToPixels;
 
     int32_t CountX;
     int32_t CountY;
@@ -74,11 +68,6 @@ struct world {
 
 struct game_state {
     canonical_position PlayerP;
-    // int32_t PlayerTileMapX;
-    // int32_t PlayerTileMapY;
-
-    // float PlayerX;
-    // float PlayerY;
 };
 
 #define FIRSTGAME_H
