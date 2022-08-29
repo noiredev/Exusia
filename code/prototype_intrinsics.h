@@ -4,12 +4,12 @@
 #include "math.h"
 
 inline int32_t RoundFloatToInt32(float Number) {
-    int32_t Result = (int32_t)(Number + 0.5f);
+    int32_t Result = (int32_t)roundf(Number);
     return Result;
 }
 
 inline uint32_t RoundFloatToUInt32(float Number) {
-    uint32_t Result = (uint32_t)(Number + 0.5f);
+    uint32_t Result = (uint32_t)roundf(Number);
     return Result;
 }
 

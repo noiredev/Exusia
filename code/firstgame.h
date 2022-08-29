@@ -1,6 +1,5 @@
 #if !defined(FIRSTGAME_H)
 #include "prototype_platform.h"
-#include "prototype_intrinsics.h"
 
 #define internal static
 #define local_persist static
@@ -29,43 +28,23 @@ inline game_controller_input *GetController(game_input *Input, int ControllerInd
     return Result;
 }
 
-struct tile_chunk_position {
-    uint32_t TileChunkX;
-    uint32_t TileChunkY;
+#include "prototype_intrinsics.h"
+#include "prototype_tile.h"
 
-    uint32_t RelTileX;
-    uint32_t RelTileY;
-};
-
-struct world_position {
-    uint32_t AbsTileX;
-    uint32_t AbsTileY;
-
-    float TileRelX;
-    float TileRelY;
-};
-
-struct tile_chunk {
-    uint32_t *Tiles;
+struct memory_arena {
+    memory_index Size;
+    uint8_t *Base;
+    memory_index Used;
 };
 
 struct world {
-    uint32_t ChunkShift;
-    uint32_t ChunkMask;
-    uint32_t ChunkDim;
-
-    float TileSideInMeters;
-    int32_t TileSideInPixels;
-    float MetersToPixels;
-    
-    int32_t TileChunkCountX;
-    int32_t TileChunkCountY;
-    
-    tile_chunk *TileChunks;
+    tile_map *TileMap;
 };
 
 struct game_state {
-    world_position PlayerP;
+    memory_arena WorldArena;
+    world *World;
+    tile_map_position PlayerP;
 };
 
 #define FIRSTGAME_H

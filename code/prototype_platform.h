@@ -8,6 +8,8 @@ extern "C" {
 
 typedef int32_t bool32;
 
+typedef size_t memory_index;
+
 #define Kilobytes(Value) ((Value)*1024LL)
 #define Megabytes(Value) (Kilobytes(Value)*1024LL)
 #define Gigabytes(Value) (Megabytes(Value)*1024LL)
