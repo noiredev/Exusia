@@ -5,8 +5,9 @@ struct tile_map_position {
     uint32_t AbsTileY;
     uint32_t AbsTileZ;
 
-    float TileRelX;
-    float TileRelY;
+    // These are the offsets from the tile center
+    float OffsetX;
+    float OffsetY;
 };
 
 struct tile_chunk_position {
