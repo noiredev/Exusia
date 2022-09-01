@@ -65,6 +65,35 @@ internal void InitalizeArena(memory_arena *Arena, memory_index Size, uint8_t *Ba
     Arena->Used = 0;
 }
 
+#pragma pack(push, 1)
+struct bitmap_header
+{
+    uint16_t FileType;
+    uint32_t FileSize;
+    uint16_t Reserved1;
+    uint16_t Reserved2;
+    uint32_t BitmapOffset;
+    uint32_t Size;
+    int32_t Width;
+    int32_t Height;
+    uint16_t Planes;
+    uint16_t BitsPerPixel;
+};
+
+internal uint32_t * DEBUGLoadBMP(thread_context *Thread, debug_platform_read_entire_file *ReadEntireFile, char *FileName) {
+    uint32_t *Result = 0;
+    
+    debug_read_file_result ReadResult = ReadEntireFile(Thread, FileName);    
+    if(ReadResult.ContentsSize != 0)
+    {
+        bitmap_header *Header = (bitmap_header *)ReadResult.Contents;
+        uint32_t *Pixels = (uint32_t *)((uint8_t *)ReadResult.Contents + Header->BitmapOffset);
+        Result = Pixels;
+    }
+
+    return Result;
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
@@ -77,6 +106,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
     game_state *GameState = (game_state *)Memory->PermanentStorage;
     if(!Memory->IsInitialized) {
+        DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_background.bmp");
+
         GameState->PlayerP.AbsTileX = 0;
         GameState->PlayerP.AbsTileY = 0;
         GameState->PlayerP.OffsetX = 5.0f;
