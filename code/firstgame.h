@@ -37,6 +37,12 @@ struct memory_arena {
     memory_index Used;
 };
 
+internal void InitializeArena(memory_arena *Arena, memory_index Size, uint8_t *Base) {
+    Arena->Size = Size;
+    Arena->Base = Base;
+    Arena->Used = 0;
+}
+
 #define PushStruct(Arena, type) (type *)PushSize_(Arena, sizeof(type))
 #define PushArray(Arena, Count, type) (type *)PushSize_(Arena, (Count)*sizeof(type))
 void * PushSize_(memory_arena *Arena, memory_index Size) {
@@ -51,11 +57,23 @@ struct world {
     tile_map *TileMap;
 };
 
+struct loaded_bitmap {
+    int32_t Width;
+    int32_t Height;
+    uint32_t *Pixels;
+};
+
 struct game_state {
     memory_arena WorldArena;
     world *World;
     
     tile_map_position PlayerP;
+
+    loaded_bitmap Backdrop;
+
+    loaded_bitmap HeroHead;
+    loaded_bitmap HeroCape;
+    loaded_bitmap HeroTorso;
 };
 
 #define FIRSTGAME_H
