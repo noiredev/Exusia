@@ -86,8 +86,27 @@ internal void DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, f
     for(int Y = MinY; Y < MaxY; ++Y) {
         uint32_t *Dest = (uint32_t *)DestRow;
         uint32_t *Source = SourceRow;
-        for(int X = MinX; X < MaxX; ++X) {            
-            *Dest++ = *Source++;
+        for(int X = MinX; X < MaxX; ++X) {   
+            // Need to optimise in the future
+            float A = (float)((*Source >> 24) & 0xFF) / 255.0f;
+            float SR = (float)((*Source >> 16) & 0xFF);
+            float SG = (float)((*Source >> 8) & 0xFF);
+            float SB = (float)((*Source >> 0) & 0xFF);
+
+            float DR = (float)((*Dest >> 16) & 0xFF);
+            float DG = (float)((*Dest >> 8) & 0xFF);
+            float DB = (float)((*Dest >> 0) & 0xFF);
+
+            float R = (1 - A)*DR + A*SR;
+            float G = (1 - A)*DG + A*SG;
+            float B = (1 - A)*DB + A*SB;
+
+            *Dest = (((uint32_t)(R + 0.5f) << 16) | 
+                    ((uint32_t)(G + 0.5f) << 8) | 
+                    ((uint32_t)(B + 0.5f) << 0)); 
+
+            ++Dest;
+            ++Source;
         }
 
         DestRow += Buffer->Pitch;
@@ -121,20 +140,6 @@ struct bitmap_header
 };
 #pragma pack(pop)
 
-internal bool32 BitScanForward(uint32_t *Index, uint32_t Value) {
-    bool32 Found = false;
-
-    for(uint32_t Test = 0; Test < 32; ++ Test) {
-        if(Value & (1 << Test)) {
-            *Index = Test;
-            Found = true;
-            break;
-        } 
-    }
-
-    return Found;
-}
-
 internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_entire_file *ReadEntireFile, char *FileName) {
     loaded_bitmap Result = {};
     
@@ -147,27 +152,31 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
         Result.Width = Header->Width;
         Result.Height = Header->Height;
 
+        Assert(Header->Compression == 3);
+
         uint32_t RedMask = Header->RedMask;
         uint32_t GreenMask = Header->GreenMask;
         uint32_t BlueMask = Header->BlueMask;
         uint32_t AlphaMask = ~(RedMask | GreenMask | BlueMask);
 
-        uint32_t Redshift = ;
-        uint32_t Greenshift = ;
-        uint32_t Blueshift = ;
-        uint32_t Alphashift = ;
+        bit_scan_result RedShift = FindLeastSignificantSetBit(RedMask);
+        bit_scan_result GreenShift = FindLeastSignificantSetBit(GreenMask);
+        bit_scan_result BlueShift = FindLeastSignificantSetBit(BlueMask);
+        bit_scan_result AlphaShift = FindLeastSignificantSetBit(AlphaMask);
 
-        bool32 RedFound = BitScanForward(&RedShift, RedMask);
-        Assert(RedFound);
+        Assert(RedShift.Found);
+        Assert(GreenShift.Found);
+        Assert(BlueShift.Found);
+        Assert(AlphaShift.Found);
 
         uint32_t *SourceDest = Pixels;
         for(int32_t Y = 0; Y < Header->Height; ++Y) {
             for(int32_t X = 0; X < Header->Width; ++X) {
                 uint32_t C = *SourceDest;
-                *SourceDest++ = ((((C >> AlphaShift) & 0xFF) << 24) | 
-                                 (((C >> RedShift) & 0xFF) << 16) | 
-                                 (((C >> GreenShift) & 0xFF) << 8) | 
-                                 (((C >> BlueShift) & 0xFF) << 0));
+                *SourceDest++ = ((((C >> AlphaShift.Index) & 0xFF) << 24) | 
+                                 (((C >> RedShift.Index) & 0xFF) << 16) | 
+                                 (((C >> GreenShift.Index) & 0xFF) << 8) | 
+                                 (((C >> BlueShift.Index) & 0xFF) << 0));
             }
         }
     }
