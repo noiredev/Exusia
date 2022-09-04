@@ -1,5 +1,11 @@
 #if !defined(PROTOTYPE_TILE_H)
 
+struct tile_map_difference {
+    float dX;
+    float dY;
+    float dZ;
+};
+
 struct tile_map_position {
     uint32_t AbsTileX;
     uint32_t AbsTileY;

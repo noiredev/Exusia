@@ -1,4 +1,4 @@
-#include "firstgame.h"
+#include "prototype_platform.h"
 
 #include <windows.h>
 #include <stdio.h>
@@ -137,21 +137,21 @@ inline FILETIME Win32GetLastWriteTime(char *Filename) {
     return LastWriteTime;
 }
 
-internal win32_game_code Win32LoadGameCode(char *SourceDLLName, char *TempDLLName) {
+internal win32_game_code Win32LoadGameCode(char *SourceDLLName, char *TempDLLName, char *LockFileName) {
     win32_game_code Result = {};
 
-    // TODO: Proper pathing
-    // TODO: Automatic determination of when updates are necessary.
+    WIN32_FILE_ATTRIBUTE_DATA Ignored;
+    if(!GetFileAttributesEx(LockFileName, GetFileExInfoStandard, &Ignored)) {
+        Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
 
-    Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
+        CopyFile(SourceDLLName, TempDLLName, FALSE);
+        Result.GameCodeDLL = LoadLibraryA(TempDLLName);
+        if(Result.GameCodeDLL) {
+            Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
+            Result.GetSoundSamples = (game_get_sound_samples *)GetProcAddress(Result.GameCodeDLL, "GameGetSoundSamples");
 
-    CopyFile(SourceDLLName, TempDLLName, FALSE);
-    Result.GameCodeDLL = LoadLibraryA(TempDLLName);
-    if(Result.GameCodeDLL) {
-        Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
-        Result.GetSoundSamples = (game_get_sound_samples *)GetProcAddress(Result.GameCodeDLL, "GameGetSoundSamples");
-
-        Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+            Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+        }
     }
 
     if(!Result.IsValid) {
@@ -691,6 +691,9 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
 
     char TempGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
     Win32BuildEXEPathFileName(&Win32State, "firstgame_temp.dll", sizeof(TempGameCodeDLLFullPath), TempGameCodeDLLFullPath);
+
+    char GameCodeLockFullPath[WIN32_STATE_FILE_NAME_COUNT];
+    Win32BuildEXEPathFileName(&Win32State, "lock.tmp", sizeof(GameCodeLockFullPath), GameCodeLockFullPath);
     
     LARGE_INTEGER PerfCountFrequencyResult;
     QueryPerformanceFrequency(&PerfCountFrequencyResult);
@@ -810,7 +813,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
                 float AudioLatencySeconds = 0;
                 bool32 SoundIsValid = false;
 
-                win32_game_code Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath);
+                win32_game_code Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath, GameCodeLockFullPath);
 
                 uint64_t LastCycleCount = __rdtsc();
                 while(GlobalRunning) {
@@ -819,7 +822,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
                     FILETIME NewDLLWriteTime = Win32GetLastWriteTime(SourceGameCodeDLLFullPath);
                     if(CompareFileTime(&NewDLLWriteTime, &Game.DLLLastWriteTime) != 0) {
                         Win32UnloadGameCode(&Game);
-                        Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath);
+                        Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath, GameCodeLockFullPath);
                     }
 
                     game_controller_input *OldKeyboardController = GetController(OldInput, 0);
