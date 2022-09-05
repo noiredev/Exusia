@@ -1,6 +1,5 @@
 #include "firstgame.h"
 #include "prototype_random.h"
-
 #include "prototype_tile.cpp"
 
 internal void GameOutputSound(game_state *GameState, game_sound_output_buffer *SoundBuffer, int ToneHz) {
@@ -414,6 +413,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             float PlayerSpeed = 2.0f;
             dPlayerX *= PlayerSpeed;
             dPlayerY *= PlayerSpeed;
+
+            if((dPlayerX != 0.0f) && (dPlayerY != 0.0f)) {
+                dPlayerX *= 0.707106781187f;
+                dPlayerY *= 0.707106781187f;
+            }
 
             tile_map_position NewPlayerP = GameState->PlayerP;
             NewPlayerP.OffsetX += Input->dtForFrame*dPlayerX;

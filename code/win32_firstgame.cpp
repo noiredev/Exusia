@@ -14,6 +14,8 @@ global_variable bool32 GlobalPause;
 global_variable win32_offscreen_buffer GlobalBackBuffer;
 global_variable LPDIRECTSOUNDBUFFER SecondaryBuffer;
 global_variable int64_t GlobalPerfCountFrequency;
+global_variable bool32 DEBUGGlobalShowCursor;
+global_variable WINDOWPLACEMENT GlobalWindowPosition = {sizeof(GlobalWindowPosition)};
 
 // Getting around linking error in the compiler
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
@@ -288,27 +290,33 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, i
 
 internal void Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer, HDC DeviceContext, int WindowWidth, int WindowHeight) {
     // For prototyping it is always going to blit 1 to 1 pixels to make sure there are no artifacts.
-    int OffsetX = 10;
-    int OffsetY = 10;
+    if((WindowWidth >= Buffer->Width*2) && (WindowHeight >= Buffer->Height*2)) {
+        StretchDIBits(DeviceContext,
+                      0, 0, 2*Buffer->Width, 2*Buffer->Height,
+                      0, 0, Buffer->Width, Buffer->Height,
+                      Buffer->Memory,
+                      &Buffer->Info,
+                      DIB_RGB_COLORS, SRCCOPY);
+    }
+    else {
+        int OffsetX = 10;
+        int OffsetY = 10;
 
-    PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
-    PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
-    PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
-    PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
-
-    StretchDIBits(DeviceContext, 
-                    /*
-                    X, Y, Width, Height,
-                    X, Y, Width, Height,
-                    */
-                    OffsetX, OffsetY, Buffer->Width, Buffer->Height,
-                    0, 0, Buffer->Width, Buffer->Height,
-                    Buffer->Memory,
-                    &Buffer->Info,
-                    DIB_RGB_COLORS, SRCCOPY);
+        PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
+        PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
+        PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
+        PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
+    
+        StretchDIBits(DeviceContext,
+                      OffsetX, OffsetY, Buffer->Width, Buffer->Height,
+                      0, 0, Buffer->Width, Buffer->Height,
+                      Buffer->Memory,
+                      &Buffer->Info,
+                      DIB_RGB_COLORS, SRCCOPY);
+    }
 }
 
-internal LRESULT Win32MainWindowCallBack(
+internal LRESULT CALLBACK Win32MainWindowCallBack(
   HWND Window,
   UINT Message,
   WPARAM WParam,
@@ -323,13 +331,6 @@ internal LRESULT Win32MainWindowCallBack(
 
         case WM_DESTROY: {
             GlobalRunning = false;
-        } break;
-
-        case WM_SYSKEYDOWN:
-        case WM_SYSKEYUP:
-        case WM_KEYDOWN:
-        case WM_KEYUP: {
-            Assert(!"Keyboard input came in through a non-dispatch message!");
         } break;
 
         case WM_CLOSE: {
@@ -347,7 +348,12 @@ internal LRESULT Win32MainWindowCallBack(
         } break;
 
         case WM_SETCURSOR: {
-            // SetCursor(0);
+            if(DEBUGGlobalShowCursor) {
+                Result = DefWindowProcA(Window, Message, WParam, LParam);
+            }
+            else {
+                SetCursor(0);
+            }
         } break;
         
         case WM_PAINT: {
@@ -356,6 +362,13 @@ internal LRESULT Win32MainWindowCallBack(
             win32_window_dimension Dimension = Win32GetWindowDimension(Window);
             Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext, Dimension.Width, Dimension.Height);
             EndPaint(Window, &Paint);
+        } break;
+
+        case WM_SYSKEYDOWN:
+        case WM_SYSKEYUP:
+        case WM_KEYDOWN:
+        case WM_KEYUP: {
+            Assert(!"Keyboard input came in through a non-dispatch message!");
         } break;
 
         default: {
@@ -387,8 +400,7 @@ internal void Win32ClearBuffer(win32_sound_output *SoundOutput) {
     SecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);
 }
 
-internal void Win32ProcessXInputDigitalButton(DWORD XInputButtonState, game_button_state *OldState, 
-                                                DWORD ButtonBit, game_button_state *NewState) {
+internal void Win32ProcessXInputDigitalButton(DWORD XInputButtonState, game_button_state *OldState, DWORD ButtonBit, game_button_state *NewState) {
     NewState->EndedDown = ((XInputButtonState & ButtonBit) == ButtonBit);
     NewState->HalfTransitionCount = (OldState->EndedDown != NewState->EndedDown) ? 1 : 0;
 }
@@ -514,6 +526,32 @@ internal void Win32PlaybackInput(win32_state *State, game_input *NewInput) {
     }
 }
 
+internal void ToggleFullscreen(HWND Window) {
+    // NOTE: This follows Raymond Chen's prescription
+    // for fullscreen toggling, see:
+    // http://blogs.msdn.com/b/oldnewthing/archive/2010/04/12/9994016.aspx
+    
+    DWORD Style = GetWindowLong(Window, GWL_STYLE);
+    if(Style & WS_OVERLAPPEDWINDOW) {
+        MONITORINFO MonitorInfo = {sizeof(MonitorInfo)};
+        if(GetWindowPlacement(Window, &GlobalWindowPosition) && GetMonitorInfo(MonitorFromWindow(Window, MONITOR_DEFAULTTOPRIMARY), &MonitorInfo)) {
+            SetWindowLong(Window, GWL_STYLE, Style & ~WS_OVERLAPPEDWINDOW);
+            SetWindowPos(Window, HWND_TOP,
+                         MonitorInfo.rcMonitor.left, MonitorInfo.rcMonitor.top,
+                         MonitorInfo.rcMonitor.right - MonitorInfo.rcMonitor.left,
+                         MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top,
+                         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        }
+    }
+    else {
+        SetWindowLong(Window, GWL_STYLE, Style | WS_OVERLAPPEDWINDOW);
+        SetWindowPlacement(Window, &GlobalWindowPosition);
+        SetWindowPos(Window, 0, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
+}
+
 internal void Win32ProcessPendingMessage(win32_state *State, game_controller_input *KeyboardController) {
     MSG Message;
     while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
@@ -521,7 +559,7 @@ internal void Win32ProcessPendingMessage(win32_state *State, game_controller_inp
             case WM_QUIT: {
                 GlobalRunning = false;
             } break;
-
+            
             case WM_SYSKEYDOWN:
             case WM_SYSKEYUP:
             case WM_KEYDOWN:
@@ -555,7 +593,7 @@ internal void Win32ProcessPendingMessage(win32_state *State, game_controller_inp
                         Win32ProcessKeyboardEvent(&KeyboardController->Start, IsDown);
                     } else if(VKCode == VK_SPACE) {
                         Win32ProcessKeyboardEvent(&KeyboardController->Back, IsDown);
-                    } 
+                    }
 #if FIRSTGAME_INTERNAL
                     else if(VKCode == 'P') {
                         if(IsDown) {
@@ -574,16 +612,22 @@ internal void Win32ProcessPendingMessage(win32_state *State, game_controller_inp
                                 Win32EndInputPlayback(State);
                             }
                         }
-                    } 
+                    }
 #endif
-                }
-
-                bool32 AltKeyWasDown = Message.lParam & (1 << 29);
-                if((VKCode == VK_F4) && AltKeyWasDown) {
-                    GlobalRunning = false;
+                    if(IsDown) {
+                        bool32 AltKeyWasDown = (Message.lParam & (1 << 29));
+                        if((VKCode == VK_F4) && AltKeyWasDown) {
+                            GlobalRunning = false;
+                        }
+                        if((VKCode == VK_RETURN) && AltKeyWasDown) {
+                            if(Message.hwnd) {
+                                ToggleFullscreen(Message.hwnd);
+                            }
+                        }
+                    }
                 }
             } break;
-            
+
             default: {
                 TranslateMessage(&Message);
                 DispatchMessageA(&Message);
@@ -705,6 +749,9 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
 
     Win32LoadXInput();
     
+#if FIRSTGAME_INTERNAL
+    DEBUGGlobalShowCursor = true;
+#endif
     // Setting up the game window
     WNDCLASSA WindowClass = {};
 
@@ -715,6 +762,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CommandLin
     WindowClass.style = CS_HREDRAW|CS_VREDRAW;
     WindowClass.lpfnWndProc = Win32MainWindowCallBack;
     WindowClass.hInstance = Instance;
+    WindowClass.hCursor = LoadCursor(0, IDC_ARROW);
     // WindowClass.hIcon;
     WindowClass.lpszClassName = "FirstGameWindowClass";
 

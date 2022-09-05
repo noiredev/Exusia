@@ -122,7 +122,7 @@ inline bool32 AreOnSametile(tile_map_position *A, tile_map_position *B) {
     return Result;
 }
 
-tile_map_difference Subtract(tile_map *TileMap, tile_map_position *A, tile_map_position *B) {
+inline tile_map_difference Subtract(tile_map *TileMap, tile_map_position *A, tile_map_position *B) {
     tile_map_difference Result;
 
     float dTileX = (float)A->AbsTileX - (float)B->AbsTileX;
