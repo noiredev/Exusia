@@ -1,7 +1,6 @@
 #if !defined(FIRSTGAME_H)
 #include "prototype_platform.h"
-#include "prototype_intrinsics.h"
-#include "prototype_tile.h"
+
 
 struct memory_arena {
     memory_index Size;
@@ -24,6 +23,10 @@ void * PushSize_(memory_arena *Arena, memory_index Size) {
 
     return Result;    
 }
+
+#include "prototype_math.h"
+#include "prototype_intrinsics.h"
+#include "prototype_tile.h"
 
 struct world {
     tile_map *TileMap;

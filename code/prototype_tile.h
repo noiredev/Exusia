@@ -1,8 +1,7 @@
 #if !defined(PROTOTYPE_TILE_H)
 
 struct tile_map_difference {
-    float dX;
-    float dY;
+    v2 dXY;
     float dZ;
 };
 
@@ -12,8 +11,7 @@ struct tile_map_position {
     uint32_t AbsTileZ;
 
     // These are the offsets from the tile center
-    float OffsetX;
-    float OffsetY;
+    v2 Offset;
 };
 
 struct tile_chunk_position {
