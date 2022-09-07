@@ -391,33 +391,37 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         else
         {
             // NOTE: Use digital movement tuning
-            v2 dPlayer = {};
+            v2 ddPlayer = {};
             
             if(Controller->MoveUp.EndedDown) {
                 GameState->HeroFacingDirection = 1;
-                dPlayer.Y = 1.0f;
+                ddPlayer.Y = 1.0f;
             }
             if(Controller->MoveDown.EndedDown) {
                 GameState->HeroFacingDirection = 3;
-                dPlayer.Y = -1.0f;
+                ddPlayer.Y = -1.0f;
             }
             if(Controller->MoveLeft.EndedDown) {
                 GameState->HeroFacingDirection = 2;
-                dPlayer.X = -1.0f;
+                ddPlayer.X = -1.0f;
             }
             if(Controller->MoveRight.EndedDown) {
                 GameState->HeroFacingDirection = 0;
-                dPlayer.X = 1.0f;
+                ddPlayer.X = 1.0f;
             }
-            float PlayerSpeed = 2.0f;
-            dPlayer *= PlayerSpeed;
+            float PlayerSpeed = 10.0f;
+            ddPlayer *= PlayerSpeed;
 
-            if((dPlayer.X != 0.0f) && (dPlayer.Y != 0.0f)) {
-                dPlayer *= 0.707106781187f;
+            ddPlayer += -1.5f*GameState->dPlayerP;
+
+            if((ddPlayer.X != 0.0f) && (ddPlayer.Y != 0.0f)) {
+                ddPlayer *= 0.707106781187f;
             }
 
             tile_map_position NewPlayerP = GameState->PlayerP;
-            NewPlayerP.Offset += Input->dtForFrame*dPlayer;
+            NewPlayerP.Offset += 0.75f*ddPlayer*Square(Input->dtForFrame) + GameState->dPlayerP*Input->dtForFrame;
+            GameState->dPlayerP += ddPlayer*Input->dtForFrame;
+
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
 
             tile_map_position PlayerLeft = NewPlayerP;
@@ -428,15 +432,50 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             PlayerRight.Offset.X += 0.5f*PlayerWidth;
             PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
-            if(IsTileMapPointEmpty(TileMap, NewPlayerP) && IsTileMapPointEmpty(TileMap, PlayerLeft) && IsTileMapPointEmpty(TileMap, PlayerRight)) {
-                if(!AreOnSametile(&GameState->PlayerP, &NewPlayerP)) {
+            bool32 Collided = false;
+            tile_map_position ColP = {};
+            if(!IsTileMapPointEmpty(TileMap, NewPlayerP)) {
+                ColP = NewPlayerP;
+                Collided = true;
+            }
+            if(!IsTileMapPointEmpty(TileMap, PlayerLeft)) {
+                ColP = PlayerLeft;
+                Collided = true;
+            }
+            if(!IsTileMapPointEmpty(TileMap, PlayerRight)) {
+                ColP = PlayerRight;
+                Collided = true;
+            }
+            
+            if(Collided) {
+                v2 r = {0,0};
+                if(ColP.AbsTileX < GameState->PlayerP.AbsTileX) {
+                    r = v2{1, 0};
+                }
+                if(ColP.AbsTileX > GameState->PlayerP.AbsTileX) {
+                    r = v2{-1, 0};
+                }
+                if(ColP.AbsTileY < GameState->PlayerP.AbsTileY) {
+                    r = v2{0, 1};
+                }
+                if(ColP.AbsTileY > GameState->PlayerP.AbsTileY) {
+                    r = v2{0, -1};
+                }
+
+                GameState->dPlayerP = GameState->dPlayerP - 1*InnerProduct(GameState->dPlayerP, r)*r;
+            }
+            else {                
+                if(!AreOnSameTile(&GameState->PlayerP, &NewPlayerP)) {
                     uint32_t NewTileValue = GetTileValue(TileMap, NewPlayerP);
+
                     if(NewTileValue == 3) {
                         ++NewPlayerP.AbsTileZ;
-                    } else if(NewTileValue == 4) {
-                        --NewPlayerP.AbsTileZ;
                     }
+                    else if(NewTileValue == 4) {
+                        --NewPlayerP.AbsTileZ;
+                    }    
                 }
+                
                 GameState->PlayerP = NewPlayerP;
             }
             GameState->CameraP.AbsTileZ = GameState->PlayerP.AbsTileZ;

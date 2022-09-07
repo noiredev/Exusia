@@ -70,5 +70,17 @@ inline v2 operator-(v2 A, v2 B) {
     return Result;
 }
 
+inline float Square(float A) {
+    float Result = A*A;
+
+    return Result;
+}
+
+inline float InnerProduct(v2 A, v2 B) {
+    float Result = A.X*B.X + A.Y*B.Y;
+
+    return Result;
+}
+
 #define PROTOTYPE_MATH_H
 #endif

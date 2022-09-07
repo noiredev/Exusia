@@ -53,6 +53,7 @@ struct game_state {
     
     tile_map_position CameraP;
     tile_map_position PlayerP;
+    v2 dPlayerP;
 
     loaded_bitmap Backdrop;
     uint32_t HeroFacingDirection;

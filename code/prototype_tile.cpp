@@ -117,7 +117,7 @@ inline tile_map_position RecanonicalizePosition(tile_map *TileMap, tile_map_posi
     return Result;
 }
 
-inline bool32 AreOnSametile(tile_map_position *A, tile_map_position *B) {
+inline bool32 AreOnSameTile(tile_map_position *A, tile_map_position *B) {
     bool32 Result = ((A->AbsTileX == B->AbsTileX) && (A->AbsTileY == B->AbsTileY) && (A->AbsTileZ == B->AbsTileZ));
     return Result;
 }
