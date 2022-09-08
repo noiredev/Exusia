@@ -82,5 +82,11 @@ inline float InnerProduct(v2 A, v2 B) {
     return Result;
 }
 
+inline float LengthSq(v2 A) {
+    float Result = Inner(A, A);
+
+    return Result;
+}
+
 #define PROTOTYPE_MATH_H
 #endif
