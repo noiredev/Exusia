@@ -191,6 +191,10 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     return Result;
 }
 
+internal void MovePlayer() {
+    
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
