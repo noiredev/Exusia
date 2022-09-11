@@ -191,6 +191,13 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     return Result;
 }
 
+internal void AddPlayer(void) {
+    GameState->PlayerP.AbsTileX = 0;
+    GameState->PlayerP.AbsTileY = 0;
+    GameState->PlayerP.Offset.X = 5.0f;
+    GameState->PlayerP.Offset.Y = 5.0f;
+}
+
 internal void MovePlayer() {
     float PlayerSpeed = 10.0f;
     ddPlayer *= PlayerSpeed;
@@ -325,11 +332,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
         GameState->CameraP.AbsTileX = 17/2;
         GameState->CameraP.AbsTileY = 9/2;
-
-        GameState->PlayerP.AbsTileX = 0;
-        GameState->PlayerP.AbsTileY = 0;
-        GameState->PlayerP.Offset.X = 5.0f;
-        GameState->PlayerP.Offset.Y = 5.0f;
 
         InitializeArena(&GameState->WorldArena, Memory->PermanentStorageSize - sizeof(game_state), (uint8_t *)Memory->PermanentStorage + sizeof(game_state));
 
