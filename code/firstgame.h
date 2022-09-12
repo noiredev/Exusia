@@ -49,8 +49,8 @@ struct hero_bitmaps
 
 struct entity {
     bool32 Exists;
-    tile_map_position PlayerP;
-    v2 dPlayerP;
+    tile_map_position P;
+    v2 dP;
 }
 
 struct game_state {
