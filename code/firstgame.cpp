@@ -191,7 +191,10 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     return Result;
 }
 
-internal void AddPlayer(entity *Entity) {
+internal void InitializePlayer(entity *Entity) {
+    Entity = {};
+
+    Entity->Exists = true;
     Entity->P.AbsTileX = 0;
     Entity->P.AbsTileY = 0;
     Entity->P.Offset.X = 5.0f;
