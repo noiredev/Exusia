@@ -38,8 +38,7 @@ struct loaded_bitmap {
     uint32_t *Pixels;
 };
 
-struct hero_bitmaps
-{
+struct hero_bitmaps {
     int32_t AlignX;
     int32_t AlignY;
     loaded_bitmap Head;
@@ -57,6 +56,7 @@ struct game_state {
     memory_arena WorldArena;
     world *World;
     
+    uint32_t CameraFollowingEntityIndex;
     tile_map_position CameraP;
 
     uint32_t PlayerIndexForController[ArrayCount(((game_input *)0)->Controllers];

@@ -191,6 +191,16 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     return Result;
 }
 
+inline entity *GetEntity(game_state *GameState, uint32_t Index) {
+    entity *Entity = 0;
+
+    if((Index > 0) && (Index < ArrayCount(GameState->Entities))) {
+        Entity = &GameState->Entites[Index];
+    }
+
+    return Entity;
+}
+
 internal void InitializePlayer(entity *Entity) {
     Entity = {};
 
@@ -202,6 +212,8 @@ internal void InitializePlayer(entity *Entity) {
 }
 
 internal void MovePlayer() {
+    tile_map_position OldPlayerP = GameState->PlayerP;
+
     float PlayerSpeed = 10.0f;
     ddPlayer *= PlayerSpeed;
 
@@ -285,6 +297,18 @@ internal void MovePlayer() {
             }
         }
     }
+
+    if(!AreOnSameTile(&OldPlayerP, &GameState->PlayerP)) {
+    uint32_t NewTileValue = GetTileValue(TileMap, GameState->PlayerP);
+
+    if(NewTileValue == 3) {
+        ++GameState->PlayerP.AbsTileZ;
+    }
+    else if(NewTileValue == 4) {
+        --GameState->PlayerP.AbsTileZ;
+    }    
+}
+
 #endif
 }
 
@@ -377,8 +401,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             uint32_t RandomChoice;
             if(DoorUp || DoorDown) {
                 RandomChoice = RandomNumberTable[RandomNumberIndex++] % 2;
-            }
-            else {
+            } else {
                 RandomChoice = RandomNumberTable[RandomNumberIndex++] % 3;
             }
 
@@ -387,15 +410,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
                 CreatedZDoor = true;
                 if(AbsTileZ == 0) {
                     DoorUp = true;
-                }
-                else {
+                } else {
                     DoorDown = true;
                 }
-            }
-            else if(RandomChoice == 1) {
+            } else if(RandomChoice == 1) {
                 DoorRight = true;
-            }
-            else {
+            } else {
                 DoorTop = true;
             }
 
@@ -441,8 +461,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             if(CreatedZDoor) {
                 DoorDown = !DoorDown;
                 DoorUp = !DoorUp;
-            }
-            else {
+            } else {
                 DoorUp = false;
                 DoorDown = false;
             }
@@ -474,15 +493,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
     float LowerLeftX = -(float)TileSideInPixels/2;
     float LowerLeftY = (float)Buffer->Height;
-
-    tile_map_position OldPlayerP = GameState->PlayerP;
     
     for(int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers); ++ControllerIndex) {
         game_controller_input *Controller = GetController(Input, ControllerIndex);
         if(Controller->IsAnalog) {
             // NOTE: Use analog movement tuning
-        }
-        else {
+        } else {
             // NOTE: Use digital movement tuning
             v2 ddPlayer = {};
             
@@ -503,35 +519,29 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
                 ddPlayer.X = 1.0f;
             }
             
-            if(!AreOnSameTile(&OldPlayerP, &GameState->PlayerP)) {
-                uint32_t NewTileValue = GetTileValue(TileMap, GameState->PlayerP);
 
-                if(NewTileValue == 3) {
-                    ++GameState->PlayerP.AbsTileZ;
-                }
-                else if(NewTileValue == 4) {
-                    --GameState->PlayerP.AbsTileZ;
-                }    
-            }
                 
-            GameState->CameraP.AbsTileZ = GameState->PlayerP.AbsTileZ;
         }
     }
 
-    tile_map_difference Diff = Subtract(TileMap, &GameState->PlayerP, &GameState->CameraP);
-    if(Diff.dXY.X > (9.0f*TileMap->TileSideInMeters)) {
-        GameState->CameraP.AbsTileX += 17;
+    entity *CameraFollowingEntity = GetEntity(GameState, GameState->CameraFollowingEntityIndex)
+    if(CameraFollowingEntity) {
+        GameState->CameraP.AbsTileZ = CameraFollowingEntity->P.AbsTileZ;
+    
+        tile_map_difference Diff = Subtract(TileMap, &CameraFollowingEntity->PlayerP, &GameState->CameraP);
+        if(Diff.dXY.X > (9.0f*TileMap->TileSideInMeters)) {
+            GameState->CameraP.AbsTileX += 17;
+        }
+        if(Diff.dXY.X < -(9.0f*TileMap->TileSideInMeters)) {
+            GameState->CameraP.AbsTileX -= 17;
+        }
+        if(Diff.dXY.Y > (5.0f*TileMap->TileSideInMeters)) {
+            GameState->CameraP.AbsTileY += 9;
+        }
+        if(Diff.dXY.Y < -(5.0f*TileMap->TileSideInMeters)) {
+            GameState->CameraP.AbsTileY -= 9;
+        }
     }
-    if(Diff.dXY.X < -(9.0f*TileMap->TileSideInMeters)) {
-        GameState->CameraP.AbsTileX -= 17;
-    }
-    if(Diff.dXY.Y > (5.0f*TileMap->TileSideInMeters)) {
-        GameState->CameraP.AbsTileY += 9;
-    }
-    if(Diff.dXY.Y < -(5.0f*TileMap->TileSideInMeters)) {
-        GameState->CameraP.AbsTileY -= 9;
-    }
-    Diff = Subtract(TileMap, &GameState->PlayerP, &GameState->CameraP);
 
     DrawBitmap(Buffer, &GameState->Backdrop, 0, 0);
 
@@ -567,6 +577,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             }
         }
     }
+
+    Diff = Subtract(TileMap, &GameState->PlayerP, &GameState->CameraP);
 
     float PlayerR = 1.0f;
     float PlayerG = 1.0f;
