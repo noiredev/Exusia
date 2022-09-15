@@ -578,21 +578,26 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         }
     }
 
-    Diff = Subtract(TileMap, &GameState->PlayerP, &GameState->CameraP);
+    entity *Entity = GameState->Entites;
+    for(uint32_t EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex, ++Entity) {
+        if() {
+            tile_map_difference Diff = Subtract(TileMap, &GameState->PlayerP, &GameState->CameraP);
 
-    float PlayerR = 1.0f;
-    float PlayerG = 1.0f;
-    float PlayerB = 0.0f;
-    float PlayerGroundPointX = ScreenCenterX + MetersToPixels*Diff.dXY.X;
-    float PlayerGroundPointY = ScreenCenterY - MetersToPixels*Diff.dXY.Y; 
-    v2 PlayerLeftTop = {PlayerGroundPointX - 0.5f*MetersToPixels*PlayerWidth, PlayerGroundPointY - MetersToPixels*PlayerHeight};
-    v2 PlayerWidthHeight = {PlayerWidth, PlayerHeight};
-    DrawRectangle(Buffer, PlayerLeftTop, PlayerLeftTop + MetersToPixels*PlayerWidthHeight, PlayerR, PlayerG, PlayerB);
+            float PlayerR = 1.0f;
+            float PlayerG = 1.0f;
+            float PlayerB = 0.0f;
+            float PlayerGroundPointX = ScreenCenterX + MetersToPixels*Diff.dXY.X;
+            float PlayerGroundPointY = ScreenCenterY - MetersToPixels*Diff.dXY.Y; 
+            v2 PlayerLeftTop = {PlayerGroundPointX - 0.5f*MetersToPixels*PlayerWidth, PlayerGroundPointY - MetersToPixels*PlayerHeight};
+            v2 PlayerWidthHeight = {PlayerWidth, PlayerHeight};
+            DrawRectangle(Buffer, PlayerLeftTop, PlayerLeftTop + MetersToPixels*PlayerWidthHeight, PlayerR, PlayerG, PlayerB);
 
-    hero_bitmaps *HeroBitmaps = &GameState->HeroBitmaps[GameState->HeroFacingDirection];
-    DrawBitmap(Buffer, &HeroBitmaps->Torso, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
-    DrawBitmap(Buffer, &HeroBitmaps->Cape, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
-    DrawBitmap(Buffer, &HeroBitmaps->Head, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+            hero_bitmaps *HeroBitmaps = &GameState->HeroBitmaps[GameState->HeroFacingDirection];
+            DrawBitmap(Buffer, &HeroBitmaps->Torso, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+            DrawBitmap(Buffer, &HeroBitmaps->Cape, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+            DrawBitmap(Buffer, &HeroBitmaps->Head, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+        }
+    }
 }
 
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples) {

@@ -60,6 +60,7 @@ struct game_state {
     tile_map_position CameraP;
 
     uint32_t PlayerIndexForController[ArrayCount(((game_input *)0)->Controllers];
+    uint32_t EntityCount;
     entity Entities[256];
 
     loaded_bitmap Backdrop;
