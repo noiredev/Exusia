@@ -3,6 +3,11 @@
 // Todo: convert to platform efficient versions and remove math.h
 #include "math.h"
 
+inline float AbsoluteValue(float Number) {
+    float Result = fabs(Number);
+    return Result;
+}
+
 inline int32_t RoundFloatToInt32(float Number) {
     int32_t Result = (int32_t)roundf(Number);
     return Result;

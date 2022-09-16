@@ -590,9 +590,9 @@ internal void Win32ProcessPendingMessage(win32_state *State, game_controller_inp
                     } else if(VKCode == VK_RIGHT) {
                         Win32ProcessKeyboardEvent(&KeyboardController->ActionRight, IsDown);
                     } else if(VKCode == VK_ESCAPE) {
-                        Win32ProcessKeyboardEvent(&KeyboardController->Start, IsDown);
-                    } else if(VKCode == VK_SPACE) {
                         Win32ProcessKeyboardEvent(&KeyboardController->Back, IsDown);
+                    } else if(VKCode == VK_SPACE) {
+                        Win32ProcessKeyboardEvent(&KeyboardController->Start, IsDown);
                     }
 #if FIRSTGAME_INTERNAL
                     else if(VKCode == 'P') {

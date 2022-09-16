@@ -50,7 +50,9 @@ struct entity {
     bool32 Exists;
     tile_map_position P;
     v2 dP;
-}
+    uint32_t FacingDirection;
+    float Width, Height;
+};
 
 struct game_state {
     memory_arena WorldArena;
@@ -59,12 +61,11 @@ struct game_state {
     uint32_t CameraFollowingEntityIndex;
     tile_map_position CameraP;
 
-    uint32_t PlayerIndexForController[ArrayCount(((game_input *)0)->Controllers];
+    uint32_t PlayerIndexForController[ArrayCount(((game_input *)0)->Controllers)];
     uint32_t EntityCount;
     entity Entities[256];
 
     loaded_bitmap Backdrop;
-    uint32_t HeroFacingDirection;
     hero_bitmaps HeroBitmaps[4];
 };
 

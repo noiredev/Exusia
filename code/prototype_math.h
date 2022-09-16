@@ -83,7 +83,7 @@ inline float InnerProduct(v2 A, v2 B) {
 }
 
 inline float LengthSq(v2 A) {
-    float Result = Inner(A, A);
+    float Result = InnerProduct(A, A);
 
     return Result;
 }
