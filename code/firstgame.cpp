@@ -540,6 +540,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
                     ddPlayer.X = 1.0f;
                 } 
             }
+
+            MovePlayer(GameState, ControllingEntity, Input->dtForFrame, ddPlayer);
         } else {
             if(Controller->Start.EndedDown) {
                 ControllingEntity = AddEntity(GameState);
