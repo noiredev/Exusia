@@ -213,12 +213,14 @@ internal void InitializePlayer(entity *Entity) {
     Entity->Width = 0.75f*Entity->Height;
 }
 
-internal entity *AddEntity(game_state *GameState) {
+internal uint32_t *AddEntity(game_state *GameState) {
+    uint32_t EntityIndex = GameState->EntityCount++;
+
     Assert(GameState->EntityCount < ArrayCount(GameState->Entities));
-    entity *Entity = &GameState->Entities[GameState->EntityCount++];
+    entity *Entity = &GameState->Entities[EntityIndex];
     *Entity = {};
 
-    return Entity;
+    return EntityIndex;
 }
 
 internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddPlayer) {
@@ -346,6 +348,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
     game_state *GameState = (game_state *)Memory->PermanentStorage;
     if(!Memory->IsInitialized) {
+        // Reserves entity slot 0 for the null entity.
+        AddEntity(GameState);
+
         GameState->Backdrop = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_background.bmp");
 
         hero_bitmaps *Bitmap;
@@ -544,7 +549,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             MovePlayer(GameState, ControllingEntity, Input->dtForFrame, ddPlayer);
         } else {
             if(Controller->Start.EndedDown) {
-                ControllingEntity = AddEntity(GameState);
+                uint32_t EntityIndex = AddEntity(GameState);
+                ControllingEntity = GetEntity(GameState, EntityIndex);
+                GameState->PlayerIndexForController[EntityIndex] = EntityIndex;
                 InitializePlayer(ControllingEntity);
             }
         }
