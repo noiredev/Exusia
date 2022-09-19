@@ -201,9 +201,10 @@ inline entity *GetEntity(game_state *GameState, uint32_t Index) {
     return Entity;
 }
 
-internal void InitializePlayer(entity *Entity) {
+internal void InitializePlayer(game_state *GameState, uint32_t EntityIndex) {
     // Entity = {};
 
+    entity *Entity = GetEntity(GameState, EntityIndex);
     Entity->Exists = true;
     Entity->P.AbsTileX = 0;
     Entity->P.AbsTileY = 0;
@@ -211,9 +212,13 @@ internal void InitializePlayer(entity *Entity) {
     Entity->P.Offset.Y = 5.0f;
     Entity->Height = 1.4f;
     Entity->Width = 0.75f*Entity->Height;
+
+    if(!GetEntity(GameState, GameState->CameraFollowingEntityIndex)) {
+        GameState->CameraFollowingEntityIndex = EntityIndex;
+    }
 }
 
-internal uint32_t *AddEntity(game_state *GameState) {
+internal uint32_t AddEntity(game_state *GameState) {
     uint32_t EntityIndex = GameState->EntityCount++;
 
     Assert(GameState->EntityCount < ArrayCount(GameState->Entities));
@@ -223,23 +228,23 @@ internal uint32_t *AddEntity(game_state *GameState) {
     return EntityIndex;
 }
 
-internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddPlayer) {
+internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddP) {
     tile_map *TileMap = GameState->World->TileMap;
     
-    if((ddPlayer.X != 0.0f) && (ddPlayer.Y != 0.0f)) {
-        ddPlayer *= 0.707106781187f;
+    if((ddP.X != 0.0f) && (ddP.Y != 0.0f)) {
+        ddP *= 0.707106781187f;
     }
 
-    float PlayerSpeed = 10.0f;
-    ddPlayer *= PlayerSpeed;
+    float PlayerSpeed = 50.0f;
+    ddP *= PlayerSpeed;
 
-    ddPlayer += -1.5f*Entity->dP;
+    ddP += -8.0f*Entity->dP;
 
     tile_map_position OldPlayerP = Entity->P;
     tile_map_position NewPlayerP = OldPlayerP;
-    v2 PlayerDelta = 0.75f*ddPlayer*Square(dt) + Entity->dP*dt;
+    v2 PlayerDelta = 0.75f*ddP*Square(dt) + Entity->dP*dt;
     NewPlayerP.Offset += PlayerDelta;
-    Entity->dP += ddPlayer*dt;
+    Entity->dP += ddP*dt;
     NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
 
 #if 0            
@@ -322,15 +327,17 @@ internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddP
         }    
     }
 
-    if(AbsoluteValue(ddPlayer.X) > AbsoluteValue(ddPlayer.Y)) {
-        if(ddPlayer.X > 0) {
+    if((Entity->dP.X == 0.0f) && (Entity->dP.Y == 0.0f)) {
+        // NOTE: Leave facingdirection whatever it was
+    } else if(AbsoluteValue(Entity->dP.X) > AbsoluteValue(Entity->dP.Y)) {
+        if(Entity->dP.X > 0) {
             Entity->FacingDirection = 0;
         } else {
             Entity->FacingDirection = 2;
         }
 
-    } else if(AbsoluteValue(ddPlayer.X) < AbsoluteValue(ddPlayer.Y)) {
-        if(ddPlayer.Y > 0) {
+    } else if(AbsoluteValue(Entity->dP.X) < AbsoluteValue(Entity->dP.Y)) {
+        if(Entity->dP.Y > 0) {
             Entity->FacingDirection = 1;
         } else {
             Entity->FacingDirection = 3;
@@ -525,39 +532,38 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         game_controller_input *Controller = GetController(Input, ControllerIndex);
         entity *ControllingEntity = GetEntity(GameState, GameState->PlayerIndexForController[ControllerIndex]);
         if(ControllingEntity) {
-            v2 ddPlayer = {};
+            v2 ddP = {};
 
             if(Controller->IsAnalog) {
                 // NOTE: Use analog movement tuning
-                ddPlayer = v2{Controller->StickAverageX,  controller->StickAverageY};
+                ddP = v2{Controller->StickAverageX,  Controller->StickAverageY};
             } else {
                 // NOTE: Use digital movement tuning
                 if(Controller->MoveUp.EndedDown) {
-                ddPlayer.Y = 1.0f;
+                ddP.Y = 1.0f;
                 }
                 if(Controller->MoveDown.EndedDown) {
-                    ddPlayer.Y = -1.0f;
+                    ddP.Y = -1.0f;
                 }
                 if(Controller->MoveLeft.EndedDown) {
-                    ddPlayer.X = -1.0f;
+                    ddP.X = -1.0f;
                 }
                 if(Controller->MoveRight.EndedDown) {
-                    ddPlayer.X = 1.0f;
+                    ddP.X = 1.0f;
                 } 
             }
 
-            MovePlayer(GameState, ControllingEntity, Input->dtForFrame, ddPlayer);
+            MovePlayer(GameState, ControllingEntity, Input->dtForFrame, ddP);
         } else {
             if(Controller->Start.EndedDown) {
                 uint32_t EntityIndex = AddEntity(GameState);
-                ControllingEntity = GetEntity(GameState, EntityIndex);
-                GameState->PlayerIndexForController[EntityIndex] = EntityIndex;
-                InitializePlayer(ControllingEntity);
+                InitializePlayer(GameState, EntityIndex);
+                GameState->PlayerIndexForController[ControllerIndex] = EntityIndex;
             }
         }
     }
 
-    entity *CameraFollowingEntity = GetEntity(GameState, GameState->CameraFollowingEntityIndex)
+    entity *CameraFollowingEntity = GetEntity(GameState, GameState->CameraFollowingEntityIndex);
     if(CameraFollowingEntity) {
         GameState->CameraP.AbsTileZ = CameraFollowingEntity->P.AbsTileZ;
     
@@ -611,8 +617,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         }
     }
 
-    entity *Entity = GameState->Entites;
+    entity *Entity = GameState->Entities;
     for(uint32_t EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex, ++Entity) {
+        // TODO: Culling of entities based on Z camera view
         if(Entity->Exists) {
             tile_map_difference Diff = Subtract(TileMap, &Entity->P, &GameState->CameraP);
 
