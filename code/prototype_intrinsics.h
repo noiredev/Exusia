@@ -8,6 +8,18 @@ inline float AbsoluteValue(float Number) {
     return Result;
 }
 
+inline uint32_t RotateLeft(uint32_t Value, int32_t Amount) {
+    uint32_t Result = _rotl(Value, Amount);
+
+    return Result;
+}
+
+inline uint32_t RotateRight(uint32_t Value, int32_t Amount) {
+    uint32_t Result = _rotr(Value, Amount);
+
+    return Result;
+}
+
 inline int32_t RoundFloatToInt32(float Number) {
     int32_t Result = (int32_t)roundf(Number);
     return Result;
