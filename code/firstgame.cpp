@@ -151,8 +151,7 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     loaded_bitmap Result = {};
     
     debug_read_file_result ReadResult = ReadEntireFile(Thread, FileName);    
-    if(ReadResult.ContentsSize != 0)
-    {
+    if(ReadResult.ContentsSize != 0) {
         bitmap_header *Header = (bitmap_header *)ReadResult.Contents;
         uint32_t *Pixels = (uint32_t *)((uint8_t *)ReadResult.Contents + Header->BitmapOffset);
         Result.Pixels = Pixels;
@@ -180,8 +179,6 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
         int32_t GreenShift = 8 - (int32_t)GreenScan.Index;
         int32_t BlueShift = 0 - (int32_t)BlueScan.Index;
         int32_t AlphaShift = 24 - (int32_t)AlphaScan.Index;
-
-
 
         uint32_t *SourceDest = Pixels;
         for(int32_t Y = 0; Y < Header->Height; ++Y) {
@@ -255,7 +252,7 @@ internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddP
     Entity->dP += ddP*dt;
     NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
 
-#if 0            
+#if 1    
     tile_map_position PlayerLeft = NewPlayerP;
     PlayerLeft.Offset.X -= 0.5f*Entity->Width;
     PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
@@ -324,6 +321,7 @@ internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddP
             }
         }
     }
+#endif
 
     if(!AreOnSameTile(&OldPlayerP, &Entity->P)) {
         uint32_t NewTileValue = GetTileValue(TileMap, Entity->P);
@@ -343,8 +341,7 @@ internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddP
         } else {
             Entity->FacingDirection = 2;
         }
-
-    } else if(AbsoluteValue(Entity->dP.X) < AbsoluteValue(Entity->dP.Y)) {
+    } else {
         if(Entity->dP.Y > 0) {
             Entity->FacingDirection = 1;
         } else {
@@ -352,7 +349,7 @@ internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddP
         }
     }
 }
-#endif
+
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
