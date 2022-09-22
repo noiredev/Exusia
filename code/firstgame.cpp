@@ -235,6 +235,11 @@ internal uint32_t AddEntity(game_state *GameState) {
 
 internal void MovePlayer(game_state *GameState, entity *Entity, float dt, v2 ddP) {
     tile_map *TileMap = GameState->World->TileMap;
+
+    float ddPLength = LengthSq(ddP);
+    if(ddPLength > 1.0f) {
+        ddP *= (1.0f / SquareRoot(ddPLength));
+    }
     
     if((ddP.X != 0.0f) && (ddP.Y != 0.0f)) {
         ddP *= 0.707106781187f;
