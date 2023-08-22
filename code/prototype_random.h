@@ -1,6 +1,6 @@
 #if !defined(PROTOTYPE_RANDOM_H)
 
-global_variable uint32_t RandomNumberTable[] =
+global_variable uint32 RandomNumberTable[] =
 {
     0x4f0143b, 0x3402005, 0x26f2b01, 0x22796b6, 0x57343bb, 0x2d9954e, 0x06f9425, 0x1789180,
     0x57d8fab, 0x5365d9c, 0x0e9ec55, 0x2a623e0, 0x366e05d, 0x3759f45, 0x1b4d151, 0x35a5411,
@@ -518,3 +518,4 @@ global_variable uint32_t RandomNumberTable[] =
 
 #define PROTOTYPE_RANDOM_H
 #endif
+
