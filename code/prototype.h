@@ -53,7 +53,8 @@ inline void ZeroSize(memory_index Size, void *Ptr) {
 struct loaded_bitmap {
     int32 Width;
     int32 Height;
-    uint32 *Pixels;
+    int32 Pitch;
+    void *Memory;
 };
 
 struct hero_bitmaps {
@@ -65,7 +66,7 @@ struct hero_bitmaps {
 };
 
 struct low_entity {
-    //world_position P;
+    world_position P;
     sim_entity Sim;
 };
 
@@ -116,8 +117,9 @@ struct game_state {
     uint32 LowEntityCount;
     low_entity LowEntities[100000];
 
-    uint32 HighEntityCount;
-    entity HighEntities_[256];
+    loaded_bitmap Grass[2];
+    loaded_bitmap Stone[4];
+    loaded_bitmap Tuft[3];
 
     loaded_bitmap Backdrop;
     loaded_bitmap Shadow;
@@ -125,12 +127,23 @@ struct game_state {
 
     loaded_bitmap Tree;
     loaded_bitmap Sword;
-    loaded_bitmap StairWell;
+    loaded_bitmap Stairwell;
     real32 MetersToPixels;
 
     // TODO: Must be power of two
     pairwise_collision_rule *CollisionRuleHash[256];
     pairwise_collision_rule *FirstFreeCollisionRule;
+
+    sim_entity_collision_volume_group *NullCollision;
+    sim_entity_collision_volume_group *SwordCollision;
+    sim_entity_collision_volume_group *StairCollision;
+    sim_entity_collision_volume_group *PlayerCollision;
+    sim_entity_collision_volume_group *MonsterCollision;
+    sim_entity_collision_volume_group *FamiliarCollision;
+    sim_entity_collision_volume_group *WallCollision;
+    sim_entity_collision_volume_group *StandardRoomCollision;
+
+    loaded_bitmap GroundBuffer;
 };
 
 // TODO: This is dumb this should just be part of the renderer pushbuffer add correctioni of coords

@@ -103,12 +103,12 @@ typedef DEBUG_PLATFORM_READ_ENTIRE_FILE(debug_platform_read_entire_file);
 typedef DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file);
 #endif
 
+#define BITMAP_BYTES_PER_PIXEL 4
 typedef struct game_offscreen_buffer {
     void *Memory;
     int Width;
     int Height;
     int Pitch;
-    int BytesPerPixel;
 } game_offscreen_buffer;
 
 typedef struct game_sound_output_buffer {

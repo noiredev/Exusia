@@ -9,6 +9,8 @@ struct move_spec {
 enum entity_type {
     EntityType_Null,
 
+    EntityType_Space,
+
     EntityType_Hero,
     EntityType_Wall,
     EntityType_Familiar,
@@ -35,15 +37,29 @@ enum sim_entity_flags {
     EntityFlag_Collides = (1 << 0),
     EntityFlag_Nonspatial = (1 << 1),
     EntityFlag_Moveable = (1 << 2),
+    EntityFlag_ZSupported = (1 << 3),
+    EntityFlag_Traversable = (1 << 4),
 
     EntityFlag_Simming = (1 << 30),
+};
+
+struct sim_entity_collision_volume {
+    v3 OffsetP;
+    v3 Dim;
+};
+
+struct sim_entity_collision_volume_group {
+    sim_entity_collision_volume TotalVolume;
+
+    uint32 VolumeCount;
+    sim_entity_collision_volume *Volumes;
 };
 
 struct sim_entity {
     // NOTE: These are only for the sim region
     world_chunk *OldChunk;
     uint32 StorageIndex;
-    bool32 Updateable;
+    bool32 Updatable;
 
     entity_type Type;
     uint32 Flags;
@@ -56,7 +72,7 @@ struct sim_entity {
 
     real32 DistanceLimit;
 
-    v3 Dim;
+    sim_entity_collision_volume_group *Collision;
 
     real32 Width, Height;
 
@@ -69,9 +85,13 @@ struct sim_entity {
 
     // TODO: Should hitpoints themselves be entities?
     uint32 HitPointMax;
-    hit_point HitPoints[16];
+    hit_point HitPoint[16];
 
     entity_reference Sword;
+
+    // TODO: Only for stairs
+    v2 WalkableDim;
+    real32 WalkableHeight;
 };
 
 struct sim_entity_hash {
@@ -86,7 +106,7 @@ struct sim_region {
 
     world_position Origin;
     rectangle3 Bounds;
-    rectangle3 UpdateableBounds;
+    rectangle3 UpdatableBounds;
 
     uint32 MaxEntityCount;
     uint32 EntityCount;
